@@ -1,0 +1,158 @@
+Zeev.Controller = {
+    Settings: {
+        MapFields: () => {
+            Zeev.Form.Functions.AddGrouping("Dados do Processo", "DadosDoProcesso", ["Codigo_processo", "Mes_referencia"]);
+            Zeev.Form.Functions.AddGrouping("Variáveis", "Variaveis", ["totalKmPercorrida", "totalDiasADescontar", "totalTarifa"]);
+        },
+        MapDataSources: () => {
+            Zeev.Integration.Functions.AddDataSource("VehicleCompensationByReferenceMonth", {
+                name: "Indenização de Veículos Por Mês de Referência",
+                Dev: "/api/internal/legacy/1.0/datasource/get/1.0/qw0Xk6xWKL563BI8VvBqJsL789kHjzp988GeZr-A7ANpUIoXnJrpXW3c6fbH5dU1nJBoSt-YQVBZXhqrCsqEFg__"
+            });
+            Zeev.Integration.Functions.AddDataSource("CitiesOfRS", {
+                name: "Cidades do Rio Grande do Sul",
+                Dev: "/api/internal/legacy/1.0/datasource/get/1.0/qw0Xk6xWKL563BI8VvBqJm3KpIkO9CEecRV7w2QK8zeHVeTsxPHSG6T8E9JuFOZQxQYJqh4LLNpthHEON9-d8Q__"
+            });
+            Zeev.Integration.Functions.AddDataSource("ReleaseCompensationBatchReport", {
+                name: "Report Liberação Lote de Indenização",
+                Dev: "/api/internal/legacy/1.0/datasource/get/1.0/qw0Xk6xWKL563BI8VvBqJqzCo3gJTKEkcMpVpdD7z9e8VIDTM7@lc-CF4Ek3UGbNViqHl46mioX@gvJVKBB6tg__"
+            });
+        },
+        Init: async () => {
+            Zeev.Resources.CustomVariables.Environments = "dev";
+            Zeev.System.IsDebug = true;
+
+            Zeev.Resources.Functions.MapNativeResources();
+            Zeev.Controller.Settings.MapFields();
+            Zeev.Controller.Settings.MapDataSources();
+            await Zeev.Controller.CustomerRules.GenerateCsv();
+        }
+    },
+    CustomerRules: {
+        FetchPostRequest: async (dataSource, params) => {
+            let result = null
+            await Zeev.Integration.Functions.ExecuteDataSource(Zeev.Integration.DataSources[dataSource], params, "POST")
+                .then(response => { if (response) result = response; });
+            return result;
+        },
+        FetchGetRequest: async (dataSource) => {
+            let result = null
+            await Zeev.Integration.Functions.ExecuteDataSource(Zeev.Integration.DataSources[dataSource], "GET")
+                .then(response => { if (response) result = response; });
+            return result;
+        },
+        GetCitiesOfRS: async () => {
+            const citiesOfRS = await Zeev.Controller.CustomerRules.FetchGetRequest("CitiesOfRS");
+            return [].concat(citiesOfRS || []);
+        },
+        GetVehicleCompensationByReferenceMonth: async () => {
+            const referenceMonth = document.querySelector("[xid='divmes_referencia']").innerHTML;
+            const params = { inpmesReferencia: referenceMonth }
+            const vehicleCompensationByReferenceMonth = await Zeev.Controller.CustomerRules.FetchPostRequest("VehicleCompensationByReferenceMonth", params);
+            return [].concat(vehicleCompensationByReferenceMonth || []);
+        },
+        GenerateCsv: async () => {
+            const citiesOfRS = await Zeev.Controller.CustomerRules.GetCitiesOfRS();
+            const vehicleCompensationByReferenceMonth = await Zeev.Controller.CustomerRules.GetVehicleCompensationByReferenceMonth();
+
+            Zeev.Controller.CustomerRules.GenerateCsvFile("STI", vehicleCompensationByReferenceMonth, citiesOfRS);
+            Zeev.Controller.CustomerRules.GenerateCsvFile("DEPAD", vehicleCompensationByReferenceMonth, citiesOfRS);
+            Zeev.Controller.CustomerRules.GenerateCsvFile("GSF", vehicleCompensationByReferenceMonth, citiesOfRS);
+            Zeev.Controller.CustomerRules.GenerateCsvFile("Receita", vehicleCompensationByReferenceMonth, citiesOfRS);
+            Zeev.Controller.CustomerRules.GenerateCsvFile("CAGE", vehicleCompensationByReferenceMonth, citiesOfRS);
+            Zeev.Controller.CustomerRules.GenerateCsvFile("Tesouro", vehicleCompensationByReferenceMonth, citiesOfRS);
+            Zeev.Controller.CustomerRules.GenerateCsvFile("Servidores", vehicleCompensationByReferenceMonth, citiesOfRS);
+        },
+        FilterByArea: (servantList, area) => {
+            if (area === "Servidores") {
+                return servantList = servantList.filter(item =>
+                    item.fields.flowResult === 'Enviado para aprovação de lote'
+                );
+            } else {
+                return servantList = servantList.filter(item =>
+                    item.fields.area === area && item.fields.flowResult === 'Enviado para aprovação de lote'
+                );
+            }
+        },
+        GenerateCsvFile: (area, servantList, cityList) => {
+            let csvRows = "";
+            let committedValue = 0;
+
+            const filteredServantList = Zeev.Controller.CustomerRules.FilterByArea(servantList, area);
+
+            for (const servant of filteredServantList) {
+                const name = servant.fields.nome;
+                const codCredor = servant.fields.codigo_credor;
+                const cityName = servant.fields.minicipio;
+                const cityCode = cityList.find(c => c.txt.toLowerCase() === cityName.toLowerCase()).cod;
+                const fareValue = servant.fields.valor_tarifa_km;
+                const kmMax = servant.fields.km_maxima_sem_comprovacao;
+                const art8Value = servant.fields.art8OR;
+                const kmTraveled = servant.fields.totalKmPercorrida;
+                const art6Value = servant.fields.aRT6OR;
+                const art9Value = servant.fields.art9OUnicoR;
+                const totalValue = servant.fields.totalR;
+                csvRows += `${name};${codCredor};${cityCode};${cityName};${fareValue};${kmMax};${art8Value};${kmTraveled};${art6Value};${art9Value};${totalValue};${kmMax}`;
+                csvRows += `\n`;
+                committedValue += Number(totalValue);
+            }
+
+            const caseNumber = document.querySelector("[xid='divcodigo_processo']").innerHTML;
+            const competence = document.querySelector("[xid='divmes_referencia']").innerHTML;
+            let csvHeader = "";
+            csvHeader += `Nome da área: ${area}`;
+            csvHeader += `\n`;
+            csvHeader += `N° do expediente: ${caseNumber}`;
+            csvHeader += `\n`;
+            csvHeader += `Competência: ${competence}`;
+            csvHeader += `\n`;
+            csvHeader += `Valor total a ser empenhado: R$ ${committedValue}`;
+            csvHeader += `\n`;
+            csvHeader += `Legislação:`;
+            csvHeader += `\n\n`;
+            csvHeader += `Nome Credor;Cod Credor;Cod Municipio;Nome Municipio;Valor Tarifa;Km Fixa;Valor Art8;Km Percorrida;Valor Art6;Valor Art9;Valor Total a Receber;Km Total a Receber`;
+            csvHeader += `\n`;
+
+            const csvContent = "\uFEFF" + csvHeader + csvRows;
+
+            const areaObject = {
+                "STI": "divrelatorioServidoresDETIC",
+                "DEPAD": "divservidoresDEPAD",
+                "GSF": "divservidoresGSF",
+                "Receita": "divservidoresReceita",
+                "CAGE": "divservidoresCAGE",
+                "Tesouro": "divservidoresTesouro",
+                "Servidores": "divtodosOsServidores"
+            };
+
+            const csvElement = areaObject[area];
+            const csvName = `Processo${Zeev.Resources.Native.CodFlowExecute.GetValue()}_Lote_${area}.csv`;
+            const csvLink = Zeev.Controller.CustomerRules.GenerateCsvLink(csvContent, csvName);
+            Zeev.Controller.CustomerRules.GenerateCsvElement(csvElement, csvLink, csvName);
+        },
+        GenerateCsvLink: (csvContent, csvName) => {
+            const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+            const url = URL.createObjectURL(blob);
+            const downloadLink = document.createElement("a");
+
+            downloadLink.href = url;
+            downloadLink.download = csvName;
+            return downloadLink;
+        },
+        GenerateCsvElement: (csvElement, csvLink, csvName) => {
+            const element = document.querySelector(`[xid='${csvElement}']`);
+            const html = `
+                <div class="containerFormFileLink">
+                    <a href="${csvLink}" target="_blank" class="small">${csvName}</a>
+                </div>`;
+
+            element.innerHTML = html;
+        }
+    }
+}
+
+document.addEventListener("DOMContentLoaded", function (e) {
+    setTimeout(() => {
+        Zeev.Controller.Settings.Init();
+    }, Zeev.System.TimeOut);
+});
