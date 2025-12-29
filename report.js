@@ -59,7 +59,7 @@ Zeev.Controller = {
       return [].concat(citiesOfRS || []);
     },
     GetVehicleCompensationByReferenceMonth: async () => {
-      const referenceMonth = document.getElementById("inpmes_referencia").value;
+      const referenceMonth = document.querySelector("[xid='divmes_referencia']").innerHTML;
 
       const allResults = [];
       for (let pageNumber = 1; pageNumber <= 20; pageNumber++) {
