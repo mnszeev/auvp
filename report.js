@@ -96,15 +96,15 @@ Zeev.Controller = {
     },
     FilterByArea: (servantList, area) => {
       if (area === "Servidores") {
-        filteredServantList = servantList = servantList.filter(
+        return (servantList = servantList.filter(
           (item) => item.fields.flowResult === "Enviado para aprovação de lote"
-        );
+        ));
       } else {
-        filteredServantList = servantList = servantList.filter(
+        return (servantList = servantList.filter(
           (item) =>
             item.fields.area.toUpperCase() === area.toUpperCase() &&
             item.fields.flowResult === "Enviado para aprovação de lote"
-        );
+        ));
       }
     },
     GenerateCsvFile: (area, servantList, cityList) => {
