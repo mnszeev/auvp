@@ -58,19 +58,61 @@ Zeev.Controller = {
       const citiesOfRS = await Zeev.Controller.CustomerRules.FetchGetRequest("CitiesOfRS");
       return [].concat(citiesOfRS || []);
     },
+
+    MountVehicleCompensationPostBody: (referenceMonth, pageNumber) => {
+      let requestBody = {
+        startDateIntervalBegin: "2024-01-01T00:00:00",
+        startDateIntervalEnd: "2028-01-01T00:00:00",
+        simulation: false,
+        flowId: 112,
+        pageNumber: pageNumber,
+        recordsPerPage: 100,
+        formFieldNames: [
+          "servidor",
+          "municipio",
+          "valor_tarifa_km",
+          "km_maxima_sem_comprovacao",
+          "aRT6OR",
+          "art8OR",
+          "art9OUnicoR",
+          "totalKmPercorrida",
+          "codigo_credor",
+          "totalR",
+          "area",
+        ],
+        formFieldsFilter: [
+          {
+            name: "mes_referencia",
+            operator: "=",
+            value: referenceMonth,
+          },
+        ],
+      };
+
+      return JSON.stringify(requestBody);
+    },
+
     GetVehicleCompensationByReferenceMonth: async () => {
       const referenceMonth = document.querySelector("[xid='divmes_referencia']").innerHTML;
-
       const allResults = [];
-      for (let pageNumber = 1; pageNumber <= 20; pageNumber++) {
-        let params = { inpmesReferencia: referenceMonth, inppageNumberAtual: pageNumber, recordsPerPage: 100 };
-        console.log(params);
-        const response = await Zeev.Controller.CustomerRules.FetchPostRequest(
+      for (let pageNumber = 1; ; pageNumber++) {
+        const params = {
+          inpbody: Zeev.Controller.CustomerRules.MountVehicleCompensationPostBody(referenceMonth, pageNumber),
+        };
+        let response = await Zeev.Controller.CustomerRules.FetchPostRequest(
           "VehicleCompensationByReferenceMonth",
           params
         );
 
-        const data = Array.isArray(response) ? response : response?.items || response?.data || [];
+        let data = [];
+
+        if (Array.isArray(response)) {
+          data = response;
+        } else if (Array.isArray(response?.items)) {
+          data = response.items;
+        } else if (Array.isArray(response?.data)) {
+          data = response.data;
+        }
 
         if (!data || data.length === 0) {
           break;
@@ -78,7 +120,6 @@ Zeev.Controller = {
 
         allResults.push(...data);
       }
-
       return allResults;
     },
     GenerateCsv: async () => {
