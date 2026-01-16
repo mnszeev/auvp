@@ -156,7 +156,7 @@ Zeev.Controller = {
       const filteredServantList = Zeev.Controller.CustomerRules.FilterByArea(servantList, area);
 
       for (const servant of filteredServantList) {
-        const name = servant.fields.nome;
+         const name = servant.fields.nome;
         const codCredor = servant.fields.codigo_credor;
         const cityName = servant.fields.municipio;
         const cityCode = cityList.find((c) => c.txt.toLowerCase() === cityName.toLowerCase()).cod;
@@ -165,11 +165,27 @@ Zeev.Controller = {
         const art8Value = servant.fields.art8OR;
         const kmTraveled = servant.fields.totalKmPercorrida;
         const art6Value = servant.fields.aRT6OR;
+        const areaServante = servant.fields.area;
         const art9Value = servant.fields.art9OUnicoR;
         const totalValue = servant.fields.totalR;
-        csvRows += `${name};${codCredor};${cityCode};${cityName};${fareValue};${kmMax};${art8Value};${kmTraveled};${art6Value};${art9Value};${totalValue};${kmMax}`;
+        const parsedTotalValue = Number(
+          totalValue.replace(/\./g, "").replace(",", ".")
+        );
+        const parsedFareValue = Number(
+          fareValue.replace(/\./g, "").replace(",", ".")
+        );
+        const totalKmNumber =
+          parsedFareValue > 0 ? parsedTotalValue / parsedFareValue : 0;
+        const totalKm = totalKmNumber.toLocaleString("pt-BR", {
+          minimumFractionDigits: 7,
+          maximumFractionDigits: 7,
+        });
+        csvRows += `${name};${areaServante};${codCredor};${cityCode};${cityName};${fareValue};${kmMax};${kmTraveled};${art8Value};${art6Value};${art9Value};${totalValue};${totalKm}`;
         csvRows += `\n`;
-        committedValue += Number(totalValue);
+        const parsedTotal = Number(
+          totalValue.replace(/\./g, "").replace(",", ".")
+        );
+        committedValue += isNaN(parsedTotal) ? 0 : parsedTotal;
       }
 
       const caseNumber = document.querySelector("[xid='divcodigo_processo']").innerHTML;
@@ -185,7 +201,7 @@ Zeev.Controller = {
       csvHeader += `\n`;
       csvHeader += `Legislação:`;
       csvHeader += `\n\n`;
-      csvHeader += `Nome Credor;Cod Credor;Cod Municipio;Nome Municipio;Valor Tarifa;Km Fixa;Valor Art8;Km Percorrida;Valor Art6;Valor Art9;Valor Total a Receber;Km Total a Receber`;
+      csvHeader += `Nome Credor;Área;Cod Credor;Cod Municipio;Nome Municipio;Valor Tarifa;Km Fixa;Km Percorrida;Valor Art8;Valor Art6;Valor Art9;Valor Total a Receber;Km Total a Receber`;
       csvHeader += `\n`;
 
       const csvContent = "\uFEFF" + csvHeader + csvRows;
