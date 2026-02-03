@@ -70,7 +70,7 @@ Zeev.Controller = {
         formFieldNames: [
           "servidor",
           "municipio",
-          "idMunicipio"
+          "idMunicipio",
           "valor_tarifa_km",
           "km_maxima_sem_comprovacao",
           "aRT6OR",
