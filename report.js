@@ -157,6 +157,7 @@ Zeev.Controller = {
     GenerateCsvFile: (area, servantList, cityList) => {
       let csvRows = "";
       let committedValue = 0;
+      let cityCode;
 
       const filteredServantList = Zeev.Controller.CustomerRules.FilterByArea(servantList, area);
 
