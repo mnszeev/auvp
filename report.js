@@ -70,6 +70,7 @@ Zeev.Controller = {
         formFieldNames: [
           "servidor",
           "municipio",
+          "idMunicipio"
           "valor_tarifa_km",
           "km_maxima_sem_comprovacao",
           "aRT6OR",
@@ -163,7 +164,12 @@ Zeev.Controller = {
         const name = servant.fields.nome;
         const codCredor = servant.fields.codigo_credor;
         const cityName = servant.fields.municipio;
-        const cityCode = cityList.find((c) => c.txt.toLowerCase() === cityName.toLowerCase()).cod;
+                if (servant.fields.idMunicipio) {
+              cityCode = servant.fields.idMunicipio;
+          } else {
+              const city = cityList.find((c) => c.txt.toLowerCase() === cityName.toLowerCase());
+              cityCode = city ? city.cod : null; // Atribui o código ou null se não encontrar
+          }
         const fareValue = servant.fields.valor_tarifa_km;
         const kmMax = servant.fields.km_maxima_sem_comprovacao;
         const art8Value = servant.fields.art8OR;
