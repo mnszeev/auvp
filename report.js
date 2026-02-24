@@ -145,11 +145,17 @@ Zeev.Controller = {
       } else {
         const areaUpper = area.toUpperCase();
 
+          const areaGroups = {
+            DEPAD: ["DEPAD", "SUPAD"],
+            SUPAD: ["DEPAD", "SUPAD"],
+            STI: ["STI", "DETIC"],
+            DETIC: ["STI", "DETIC"]
+          };
+          const areasToFilter = areaGroups[areaUpper] || [areaUpper]
+        
         return (servantList = servantList.filter(
           (item) =>
-            (areaUpper === "DEPAD" || areaUpper === "SUPAD"
-              ? ["DEPAD", "SUPAD"].includes(item.fields.area.toUpperCase())
-              : item.fields.area.toUpperCase() === areaUpper) &&
+            areasToFilter.includes(item.fields.area.toUpperCase()) &&
             item.fields.flowResult === "Enviado para aprovação de lote"
         ));
       }
