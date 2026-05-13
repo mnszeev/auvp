@@ -140,7 +140,9 @@ Zeev.Controller = {
     FilterByArea: (servantList, area) => {
       if (area === "Servidores") {
         return (servantList = servantList.filter(
-          (item) => item.fields.flowResult === "Enviado para aprovação de lote"
+          (item) => item.fields.flowResult === "Enviado para aprovação de lote" ||
+            item.fields.flowResult === "Finalizado"
+          
         ));
       } else {
         const areaUpper = area.toUpperCase();
@@ -156,7 +158,8 @@ Zeev.Controller = {
         return (servantList = servantList.filter(
           (item) =>
             areasToFilter.includes(item.fields.area.toUpperCase()) &&
-            item.fields.flowResult === "Enviado para aprovação de lote"
+            item.fields.flowResult === "Enviado para aprovação de lote" ||
+            item.fields.flowResult === "Finalizado"
         ));
       }
     },
