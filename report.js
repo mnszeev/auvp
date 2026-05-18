@@ -158,8 +158,8 @@ Zeev.Controller = {
         return (servantList = servantList.filter(
           (item) =>
             areasToFilter.includes(item.fields.area.toUpperCase()) &&
-            item.fields.flowResult === "Enviado para aprovação de lote" ||
-            item.fields.flowResult === "Finalizado"
+            (item.fields.flowResult === "Enviado para aprovação de lote" ||
+            item.fields.flowResult === "Finalizado")
         ));
       }
     },
@@ -169,7 +169,7 @@ Zeev.Controller = {
       let cityCode;
 
       const filteredServantList = Zeev.Controller.CustomerRules.FilterByArea(servantList, area);
-
+       
       for (const servant of filteredServantList) {
         const name = servant.fields.nome;
         const codCredor = servant.fields.codigo_credor;
