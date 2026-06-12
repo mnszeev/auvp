@@ -8,6 +8,7 @@ Zeev.Controller = {
         "totalTarifa",
       ]);
     },
+    
     MapDataSources: () => {
       Zeev.Integration.Functions.AddDataSource("VehicleCompensationByReferenceMonth", {
         name: "Indenização de Veículos Por Mês de Referência",
